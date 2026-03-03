@@ -1,0 +1,53 @@
+name: Build JianPuYi APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.6'
+        channel: 'stable'
+
+    - name: Create Flutter project skeleton
+      run: |
+        flutter create --project-name jianpuyi --org com.jianpuyi --platforms android /tmp/jianpuyi_skeleton
+
+    - name: Copy Flutter skeleton files into app/
+      run: |
+        cp -r /tmp/jianpuyi_skeleton/android app/android
+        cp -r /tmp/jianpuyi_skeleton/test app/test 2>/dev/null || true
+        cp /tmp/jianpuyi_skeleton/analysis_options.yaml app/ 2>/dev/null || true
+
+    - name: Overlay our source code
+      run: |
+        cp -r app/lib/* app/lib/ 2>/dev/null || true
+
+    - name: Install dependencies
+      working-directory: ./app
+      run: flutter pub get
+
+    - name: Build APK
+      working-directory: ./app
+      run: flutter build apk --release --no-tree-shake-icons
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: jianpuyi-apk
+        path: app/build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 90
