@@ -27,27 +27,38 @@ jobs:
       run: |
         flutter create --project-name jianpuyi --org com.jianpuyi --platforms android /tmp/jianpuyi_skeleton
 
-    - name: Copy Flutter skeleton files into app/
+    - name: Copy Flutter skeleton into app/
       run: |
         cp -r /tmp/jianpuyi_skeleton/android app/android
         cp -r /tmp/jianpuyi_skeleton/test app/test 2>/dev/null || true
         cp /tmp/jianpuyi_skeleton/analysis_options.yaml app/ 2>/dev/null || true
 
-    - name: Overlay our source code
+    - name: Ensure assets directory exists
       run: |
-        cp -r app/lib/* app/lib/ 2>/dev/null || true
+        mkdir -p app/assets
 
     - name: Install dependencies
       working-directory: ./app
       run: flutter pub get
 
-    - name: Build APK
+    - name: Build release APK
       working-directory: ./app
-      run: flutter build apk --release --no-tree-shake-icons
+      run: flutter build apk --release --no-tree-shake-icons --split-per-abi
 
-    - name: Upload APK
+    - name: Upload ARM64 APK
       uses: actions/upload-artifact@v4
       with:
-        name: jianpuyi-apk
+        name: jianpuyi-apk-arm64
+        path: app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+        retention-days: 90
+
+    - name: Upload Universal APK
+      run: |
+        cd app && flutter build apk --release --no-tree-shake-icons
+
+    - name: Upload Universal APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: jianpuyi-apk-universal
         path: app/build/app/outputs/flutter-apk/app-release.apk
         retention-days: 90
